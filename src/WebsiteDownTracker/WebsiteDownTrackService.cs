@@ -49,6 +49,7 @@ namespace WebsiteDownTracker
                     var response = restClient.Execute(restRequest);
                     if (!response.IsSuccessStatusCode)
                     {
+                        _logger.LogInformation("Response: {@response}", response);
                         _telegramService.SendMessage($"{websiteItem} is down on {DateTime.UtcNow.ToString()}");
                     }
                 }
