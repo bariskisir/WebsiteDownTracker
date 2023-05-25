@@ -18,5 +18,7 @@ docker run -d --name website-down-tracker --restart always -e "Websites=https://
 
 "Timeout" -> timeout for request in minute (default 2)
 
+"DownCountLimit" -> Minimum allowed retry count (default 2)
+
 
 [Dockerhub](https://hub.docker.com/r/bariskisir/websitedowntracker)

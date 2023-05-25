@@ -1,28 +1,24 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Telegram.Bot;
 namespace WebsiteDownTracker
 {
-    public class TelegramService : ITelegramService
+    public class TelegramService : IMessageService
     {
         private readonly ILogger<TelegramService> _logger;
-        private readonly IConfiguration _configuration;
-        public string botKey { get; set; }
-        public int chatId { get; set; }
-        public TelegramService(ILogger<TelegramService> logger, IConfiguration configuration)
+        private readonly AppSettings _appSettings;
+        public TelegramService(ILogger<TelegramService> logger, IOptions<AppSettings> appSettings)
         {
             _logger = logger;
-            _configuration = configuration;
-            botKey = _configuration.GetValue<string>("TelegramBotKey");
-            chatId = _configuration.GetValue<int>("TelegramChatId");
+            _appSettings = appSettings.Value;
         }
         public void SendMessage(string message)
         {
             try
             {
-                _logger.LogInformation("SendMessage is called with message: {message} and chatId: {chatId}", message, chatId);
-                var botClient = new TelegramBotClient(this.botKey);
-                var result = botClient.SendTextMessageAsync(this.chatId, message, disableWebPagePreview: true).Result;
+                _logger.LogInformation("SendMessage is called with message: {message}", message);
+                var botClient = new TelegramBotClient(_appSettings.TelegramBotKey);
+                var result = botClient.SendTextMessageAsync(_appSettings.TelegramChatId, message, disableWebPagePreview: true).Result;
             }
             catch (Exception ex)
             {

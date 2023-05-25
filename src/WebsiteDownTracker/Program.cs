@@ -14,8 +14,7 @@ namespace WebsiteDownTracker
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .AddEnvironmentVariables();
 
-            var config = configuration
-                .Build();
+            var config = configuration.Build();
 
             Log.Logger = new LoggerConfiguration()
                 .Enrich.FromLogContext()
@@ -29,13 +28,13 @@ namespace WebsiteDownTracker
                 .ConfigureServices((context, services) =>
                 {
                     services.AddHostedService<WebsiteDownTrackService>();
-                    services.AddSingleton<ITelegramService, TelegramService>();
+                    services.AddSingleton<IMessageService, TelegramService>();
+                    services.Configure<AppSettings>(config);
                 })
                 .UseSerilog()
                 .Build()
                 .Run();
 
-            Console.ReadKey();
         }
     }
 }

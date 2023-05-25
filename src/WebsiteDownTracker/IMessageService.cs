@@ -1,6 +1,6 @@
 ﻿namespace WebsiteDownTracker
 {
-    public interface ITelegramService
+    public interface IMessageService
     {
         void SendMessage(string message);
     }

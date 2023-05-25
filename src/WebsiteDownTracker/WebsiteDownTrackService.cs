@@ -1,23 +1,21 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using RestSharp;
 namespace WebsiteDownTracker
 {
     public class WebsiteDownTrackService : BackgroundService
     {
         private readonly ILogger<WebsiteDownTrackService> _logger;
-        private readonly IConfiguration _configuration;
-        private readonly ITelegramService _telegramService;
-        public int timeout { get; set; }
-        public int delay { get; set; }
-        public WebsiteDownTrackService(ILogger<WebsiteDownTrackService> logger, IConfiguration configuration, ITelegramService telegramService)
+        private readonly IMessageService _telegramService;
+        private readonly AppSettings _appSettings;
+        private List<WebsiteDownInfo> _websiteDownInfoList { get; set; }
+        public WebsiteDownTrackService(ILogger<WebsiteDownTrackService> logger, IMessageService telegramService, IOptions<AppSettings> appSettings)
         {
             _logger = logger;
-            _configuration = configuration;
             _telegramService = telegramService;
-            this.timeout = _configuration.GetValue<int>("Timeout");
-            this.delay = _configuration.GetValue<int>("Delay");
+            _appSettings = appSettings.Value;
+            _websiteDownInfoList = new List<WebsiteDownInfo>();
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -32,12 +30,12 @@ namespace WebsiteDownTracker
                 {
                     _logger.LogError(ex, "Exception on WebsiteDownTrackService - ExecuteAsync");
                 }
-                await Task.Delay(TimeSpan.FromMinutes(this.delay), stoppingToken);
+                await Task.Delay(TimeSpan.FromMinutes(_appSettings.Delay), stoppingToken);
             }
         }
         private void WebsiteDownTrack()
         {
-            var websites = _configuration.GetValue<string>("Websites").Split(' ').ToList();
+            var websites = _appSettings.Websites.Split(' ').ToList();
             foreach (var websiteItem in websites)
             {
                 try
@@ -45,18 +43,47 @@ namespace WebsiteDownTracker
                     var restClient = new RestClient(websiteItem);
                     restClient.Options.UserAgent = "Google Chrome";
                     var restRequest = new RestRequest(string.Empty, Method.Get);
-                    restRequest.Timeout = this.timeout * 60 * 1000;
+                    restRequest.Timeout = _appSettings.Timeout * 60 * 1000;
                     var response = restClient.Execute(restRequest);
                     if (!response.IsSuccessStatusCode)
                     {
+                        UpdateWebsiteDownInfo(websiteItem);
                         _logger.LogInformation("Response: {@response}", response);
-                        _telegramService.SendMessage($"{websiteItem} is down on {DateTime.UtcNow.ToString()}");
+                        if (_websiteDownInfoList.SingleOrDefault(x => x.WebsiteUrl == websiteItem)?.DownCount >= _appSettings.DownCountLimit)
+                        {
+                            _telegramService.SendMessage($"{websiteItem} is down on {DateTime.UtcNow.ToString()}");
+                        }
+                    }
+                    else
+                    {
+                        UpdateWebsiteDownInfo(websiteItem, true);
                     }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Exception on WebsiteDownTrack");
                 }
+            }
+        }
+        private void UpdateWebsiteDownInfo(string websiteUrl, bool reset = false)
+        {
+            if (reset)
+            {
+                var existingRecord = _websiteDownInfoList.SingleOrDefault(x => x.WebsiteUrl == websiteUrl);
+                if (existingRecord != null)
+                {
+                    _websiteDownInfoList.Remove(existingRecord);
+                }
+            }
+            else if (_websiteDownInfoList.Any(x => x.WebsiteUrl == websiteUrl))
+            {
+                var existingRecord = _websiteDownInfoList.Single(x => x.WebsiteUrl == websiteUrl);
+                existingRecord.DownCount++;
+            }
+            else
+            {
+                var websiteDownInfo = new WebsiteDownInfo(websiteUrl);
+                _websiteDownInfoList.Add(websiteDownInfo);
             }
         }
     }
