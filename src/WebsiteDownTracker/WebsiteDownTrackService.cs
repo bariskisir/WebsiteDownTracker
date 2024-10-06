@@ -41,9 +41,9 @@ namespace WebsiteDownTracker
                 try
                 {
                     var restClient = new RestClient(websiteItem);
-                    restClient.Options.UserAgent = "Google Chrome";
+                    restClient.AddDefaultHeader("User-Agent", "Google Chrome");
                     var restRequest = new RestRequest(string.Empty, Method.Get);
-                    restRequest.Timeout = _appSettings.Timeout * 60 * 1000;
+                    restRequest.Timeout = TimeSpan.FromMinutes(_appSettings.Timeout);
                     var response = restClient.Execute(restRequest);
                     if (!response.IsSuccessStatusCode)
                     {
