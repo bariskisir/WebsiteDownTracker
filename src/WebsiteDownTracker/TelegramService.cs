@@ -18,7 +18,7 @@ namespace WebsiteDownTracker
             {
                 _logger.LogInformation("SendMessage is called with message: {message}", message);
                 var botClient = new TelegramBotClient(_appSettings.TelegramBotKey);
-                var result = botClient.SendTextMessageAsync(_appSettings.TelegramChatId, message, disableWebPagePreview: true).Result;
+                var result = botClient.SendMessage(_appSettings.TelegramChatId, message, linkPreviewOptions: true).Result;
             }
             catch (Exception ex)
             {
