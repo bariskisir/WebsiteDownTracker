@@ -1,5 +1,5 @@
 # Website Down Tracker
-WebsiteDownTracker is a background service running on .NET 8 This service can monitor given websites and notify via Telegram message.
+WebsiteDownTracker is a background service running on .NET 10. This service can monitor given websites and notify via Telegram message.
 
 [Check shell version](https://github.com/bariskisir/ShellWebsiteDownTracker)
 
